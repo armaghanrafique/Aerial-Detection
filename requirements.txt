@@ -1,0 +1,19 @@
+# Aerial object detection for drone / quadcopter footage.
+#
+# CPU build of torch is pulled in automatically by ultralytics. For an NVIDIA
+# GPU, install the CUDA build FIRST, then the rest:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+# The detector auto-detects and uses the GPU when available (--device auto).
+
+ultralytics>=8.3          # YOLO11 detector + tracking (pulls torch, torchvision, numpy, pillow)
+sahi>=0.11.16             # tiled inference for small top-down objects (--slice)
+lap>=0.4                  # assignment solver used by tracking
+opencv-python>=4.8,<5     # box/label drawing
+imageio>=2.31             # video/image read/write
+imageio-ffmpeg>=0.4.9     # bundles a static ffmpeg binary (no system install needed)
+
+# Local web UI (python server.py -> http://127.0.0.1:8000)
+fastapi>=0.110            # web API
+uvicorn>=0.29            # ASGI server
+python-multipart>=0.0.9  # file-upload form parsing

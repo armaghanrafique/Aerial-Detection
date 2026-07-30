@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AerialDetector — Aerial object detection</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cg fill='none' stroke='white' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M9 7H7v2M23 7h2v2M9 25H7v-2M23 25h2v-2'/%3E%3Ccircle cx='16' cy='16' r='4'/%3E%3C/g%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="26" height="26">
+          <rect width="32" height="32" rx="7" fill="currentColor" />
+          <g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+            <path d="M9 7H7v2M23 7h2v2M9 25H7v-2M23 25h2v-2" />
+            <circle cx="16" cy="16" r="4" />
+          </g>
+        </svg>
+      </span>
+      <span class="brand-name">AerialDetector</span>
+    </div>
+    <span class="status-pill">
+      <span class="dot"></span> Running locally
+    </span>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h1>Aerial object detection</h1>
+      <p>Upload drone or quadcopter footage to identify and track vehicles, pedestrians, and other outdoor objects. All processing runs on this machine.</p>
+    </div>
+
+    <!-- Upload + configuration -->
+    <section id="upload-panel" class="card">
+      <div id="dropzone" tabindex="0" role="button" aria-label="Choose a video file">
+        <input id="file-input" type="file" accept="video/*" hidden />
+        <span class="dz-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V4" /><path d="m8 8 4-4 4 4" />
+            <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+          </svg>
+        </span>
+        <p class="dz-title">Drag and drop a video file</p>
+        <p class="dz-sub">or browse to select</p>
+        <p id="file-name" class="file-name"></p>
+      </div>
+      <p class="dz-formats">Supported formats: MP4, MOV, AVI, MKV</p>
+
+      <div class="config">
+        <div class="field">
+          <label for="opt-model">Detection model</label>
+          <div class="select-wrap">
+            <select id="opt-model">
+              <option value="visdrone" selected>VisDrone — aerial, 10 classes</option>
+              <option value="coco">COCO / YOLO11 — general, 80 classes</option>
+            </select>
+          </div>
+          <p class="field-hint">VisDrone is tuned for the top-down view.</p>
+        </div>
+
+        <div class="field">
+          <label for="opt-conf">Confidence threshold <span id="conf-val" class="value-tag">0.25</span></label>
+          <input id="opt-conf" type="range" min="0.05" max="0.8" step="0.05" value="0.25" />
+          <p class="field-hint">Lower values return more detections.</p>
+        </div>
+
+        <div class="field toggle-field">
+          <label class="toggle" for="opt-track">
+            <input id="opt-track" type="checkbox" checked />
+            <span class="switch" aria-hidden="true"></span>
+            <span class="toggle-text">
+              <span class="toggle-label">Object tracking</span>
+              <span class="field-hint">Assigns stable IDs and counts unique objects.</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="field toggle-field">
+          <label class="toggle" for="opt-slice">
+            <input id="opt-slice" type="checkbox" />
+            <span class="switch" aria-hidden="true"></span>
+            <span class="toggle-text">
+              <span class="toggle-label">Tiled inference</span>
+              <span class="field-hint">Improves small-object recall at higher altitude. Slower.</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <button id="run-btn" class="btn-primary" disabled>Run detection</button>
+      <p id="hint" class="foot-hint">Processing time scales with clip length and available hardware. A compatible GPU is used automatically when present.</p>
+    </section>
+
+    <!-- Progress -->
+    <section id="progress-panel" class="card hidden">
+      <div class="panel-head">
+        <h2>Processing footage</h2>
+        <span id="device-text" class="device-tag"></span>
+      </div>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <p id="progress-text" class="status-line">Preparing…</p>
+    </section>
+
+    <!-- Result -->
+    <section id="result-panel" class="card hidden">
+      <div class="panel-head">
+        <h2>Results</h2>
+      </div>
+      <video id="result-video" controls playsinline></video>
+      <div id="summary" class="summary"></div>
+      <div class="result-actions">
+        <button id="download-btn" class="btn-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 21h14" />
+          </svg>
+          Download video
+        </button>
+        <button id="json-btn" class="btn-secondary">Export detections</button>
+        <button id="restart-btn" class="btn-secondary">New analysis</button>
+      </div>
+      <p class="foot-hint">The video is saved to your computer only when you download it.</p>
+    </section>
+
+    <p id="error" class="error hidden"></p>
+  </main>
+
+  <footer class="site-foot">
+    <p>All processing happens on this machine. Your footage never leaves your computer.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

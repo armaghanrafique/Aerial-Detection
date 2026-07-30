@@ -1,0 +1,74 @@
+==============================================================================
+ AerialDetector — start commands
+==============================================================================
+ Object detection for drone / quadcopter footage.
+ Run these from the project folder:
+   cd "C:\Users\Armaghan Rafique\Documents\AerialDetector"
+==============================================================================
+
+
+------------------------------------------------------------------------------
+ 1. ONE-TIME SETUP  (install dependencies)
+------------------------------------------------------------------------------
+
+  # create a virtual environment
+  python -m venv venv
+
+  # activate it (PowerShell)
+  .\venv\Scripts\Activate.ps1
+
+  # if activation is blocked, run this once, then activate again:
+  #   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+  # install everything
+  pip install -r requirements.txt
+
+
+------------------------------------------------------------------------------
+ 2. START THE WEB APP  (drag-and-drop in the browser)
+------------------------------------------------------------------------------
+
+  python server.py
+
+  Then open:  http://127.0.0.1:8000
+
+  In the browser: drop a video, choose the options, press "Run detection".
+  The annotated video plays in the page and is saved to disk only when you
+  click "Download video". Press Ctrl+C in the terminal to stop the server.
+
+
+------------------------------------------------------------------------------
+ 3. COMMAND LINE  (no browser)
+------------------------------------------------------------------------------
+
+  # aerial-specialised model + tracking (recommended for drone footage)
+  python -m aerial -i footage.mp4 -o out\detected.mp4 --weights models\visdrone.pt --track --conf 0.2
+
+  # maximum small-object recall: tiled inference (slower)
+  python -m aerial -i footage.mp4 -o out\detected.mp4 --weights models\visdrone.pt --slice --track --conf 0.2
+
+  # general COCO model (80 classes), outdoor classes only
+  python -m aerial -i footage.mp4 -o out\detected.mp4 --outdoor --track
+
+  # single image
+  python -m aerial -i frame.jpg -o annotated.jpg --weights models\visdrone.pt
+
+
+------------------------------------------------------------------------------
+ 4. NOTES
+------------------------------------------------------------------------------
+
+  - Device is automatic: an NVIDIA GPU is used when present, otherwise the CPU.
+    This machine has no NVIDIA GPU, so it runs on CPU (~1-3 frames per second);
+    start with short clips.
+
+  - For a GPU, install the CUDA build of PyTorch first, then requirements.txt:
+      pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+      pip install -r requirements.txt
+
+  - Every run also writes a JSON file next to the video with all detections
+    (class, confidence, box, track id) plus a summary.
+
+  - To fine-tune a stronger aerial model on a GPU machine:
+      python train_visdrone.py --model yolo11s.pt --epochs 60 --imgsz 1024
+==============================================================================
